@@ -1,0 +1,55 @@
+version: "3.7"
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    networks:
+      - broker-kafka
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    networks:
+      - broker-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  # consumer_nodejs:
+  #   build: consumer_nodejs
+  #   container_name: dev-consumer_nodejs
+  #   depends_on:
+  #     - kafka1
+  #   env_file:
+  #     - consumer_nodejs/docker/.env
+  #   volumes:
+  #     - ./consumer_nodejs/consumer.js:/consumer/consumer.js
+  producer_python:
+    build: producer_python
+    networks:
+      - broker-kafka
+    container_name: dev-producer_python
+    env_file:
+      - producer_python/docker/.env
+    volumes:
+      - ./producer_python:/producer
+  consumer_python:
+    networks:
+      - broker-kafka
+    build: consumer_python
+    container_name: dev-consumer_python
+    env_file:
+      - consumer_python/docker/.env
+    volumes:
+      - ./consumer_python:/consumer
+
+networks:
+  broker-kafka:
